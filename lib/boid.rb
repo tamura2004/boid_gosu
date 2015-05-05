@@ -1,7 +1,7 @@
 require "gosu"
 
-WIDTH = 1200
-HEIGHT = 700
+WIDTH = 640
+HEIGHT = 480
 
 # 個体クラス
 class Boid
@@ -95,7 +95,7 @@ class Window < Gosu::Window
     # 捕食者を回避
     targets.each do |b|
       arg = (b.pos - @enemy.pos).arg
-      if (b.pos.arg/arg).imag > 0
+      if (b.vel/(b.pos - @enemy.pos)).imag > 0
         arg += Math::PI/2
       else
         arg -= Math::PI/2
@@ -104,7 +104,7 @@ class Window < Gosu::Window
     end
 
     # 群れの行動
-    @boids << Boid.new(@img,rand(360),5,rand(WIDTH),rand(HEIGHT)) if @boids.size < 150
+    @boids << Boid.new(@img,rand(360),5,rand(WIDTH),rand(HEIGHT)) if @boids.size < 100
     @boids.update
 
   end
