@@ -1,5 +1,7 @@
-require "gosu"
-require "pry"
+require "bundler"
+Bundler.require
+# require "gosu"
+# require "pry"
 
 WIDTH = 600
 HEIGHT = 600
@@ -121,21 +123,34 @@ end
 class Scene < Gosu::Window
   def initialize
     super WIDTH,HEIGHT,false
-    @enemy = Enemy.new(Gosu::Image.new(self,"shark.png",false))
+    shark_path = File.join(File.expand_path(File.dirname(__FILE__)),"shark.png")
+    delta_path = File.join(File.expand_path(File.dirname(__FILE__)),"delta.png")
+
+    @enemy1 = Enemy.new(Gosu::Image.new(self,shark_path,false),rand(360),5,rand(WIDTH),rand(HEIGHT))
+    @enemy2 = Enemy.new(Gosu::Image.new(self,shark_path,false),rand(360),5,rand(WIDTH),rand(HEIGHT))
     @boids = Boids.new
-    @img = Gosu::Image.new(self,"delta.png",false)
+    @img = Gosu::Image.new(self,delta_path,false)
     300.times{@boids << Boid.new(@img,rand(360),5,rand(WIDTH),rand(HEIGHT))}
     @font = Gosu::Font.new(self,Gosu::default_font_name,20)
   end
 
   def update
     @boids.update
-    @enemy.update(@boids)
+
+    rel = @enemy1.pos - @enemy2.pos
+    if rel.abs < 100
+      @enemy1.change(10,rel.arg,0.1)
+      @enemy2.change(10,(-rel).arg,0.1)
+    end
+
+    @enemy1.update(@boids)
+    @enemy2.update(@boids)
   end
 
   def draw
     @boids.draw
-    @enemy.draw
+    @enemy1.draw
+    @enemy2.draw
     @font.draw("number of boid: #{@boids.size}",10,10,ZOrder::UI,1.0,1.0,0xffffff00)
   end
 end
