@@ -5,10 +5,24 @@ Bundler.require
 
 WIDTH = 600
 HEIGHT = 600
+SEPARATE_RADIUS = 20
+SEPARATE_SPD = 1
+SEPARATE_RATE = 0.05
+COHERE_SPD = 1
+COHERE_RATE = 0.01
+ALIGN_RATE = 0.05
+ALIGN_RADIUS = 50
+ESCAPE_RADIUS = 200
+ESCAPE_SPD = 5
+ESCAPE_RATE = 0.3
+CHASE_RADIUS = 200
+CHASE_SPD = 3
+CHASE_RATE = 0.01
 
 # 平均
 class Object;def try(*options);self&&send(*options);end;end
 class Array;def avg;reduce(:+).try(:/,size);end;end
+
 
 # 個体クラス
 class Boid
@@ -52,9 +66,9 @@ class Boids < Array
   def separate
     combination(2) do |b1,b2|
       rel = b1.pos - b2.pos
-      if rel.abs < 10
-        b1.change(10,rel.arg,0.1)
-        b2.change(10,(-rel).arg,0.1)
+      if rel.abs < SEPARATE_RADIUS
+        b1.change(SEPARATE_SPD,rel.arg,SEPARATE_RATE)
+        b2.change(SEPARATE_SPD,(-rel).arg,SEPARATE_RATE)
       end
     end
   end
@@ -65,17 +79,17 @@ class Boids < Array
     center = map(&:pos).avg
     each do |b|
       arg = (center - b.pos).arg
-      b.change(10,arg,0.05)
+      b.change(COHERE_SPD,arg,COHERE_RATE)
     end
   end
 
   # 整列
   def align
     each do |boid|
-      g = group(boid,50)
+      g = group(boid,ALIGN_RADIUS)
       next if g.empty?
       group_vel = g.map(&:vel).avg
-      boid.change(*group_vel.polar,0.2)
+      boid.change(*group_vel.polar,ALIGN_RATE)
     end
   end
 
@@ -92,9 +106,9 @@ class Enemy < Boid
   def update(boids)
 
     # 追う
-    boids.group(self,200) do |targets|
+    boids.group(self,CHASE_RADIUS) do |targets|
       center = targets.map(&:pos).avg
-      change(10,(center - @pos).arg,0.1)
+      change(CHASE_SPD,(center - @pos).arg,CHASE_RATE)
     end
     super()
 
@@ -104,7 +118,7 @@ class Enemy < Boid
     end
 
     # 逃げる
-    boids.group(self,100) do |targets|
+    boids.group(self,ESCAPE_RADIUS) do |targets|
       targets.each do |boid|
         rel = (boid.pos - @pos)
         arg = rel.arg
@@ -113,7 +127,7 @@ class Enemy < Boid
         else
           arg -= Math::PI/2
         end
-        boid.change(30,arg,0.3)
+        boid.change(ESCAPE_SPD,arg,ESCAPE_RATE)
       end
     end
   end
@@ -127,30 +141,20 @@ class Scene < Gosu::Window
     delta_path = File.join(File.expand_path(File.dirname(__FILE__)),"delta.png")
 
     @enemy1 = Enemy.new(Gosu::Image.new(self,shark_path,false),rand(360),5,rand(WIDTH),rand(HEIGHT))
-    @enemy2 = Enemy.new(Gosu::Image.new(self,shark_path,false),rand(360),5,rand(WIDTH),rand(HEIGHT))
     @boids = Boids.new
     @img = Gosu::Image.new(self,delta_path,false)
-    300.times{@boids << Boid.new(@img,rand(360),5,rand(WIDTH),rand(HEIGHT))}
+    150.times{@boids << Boid.new(@img,rand(360),5,rand(WIDTH),rand(HEIGHT))}
     @font = Gosu::Font.new(self,Gosu::default_font_name,20)
   end
 
   def update
     @boids.update
-
-    rel = @enemy1.pos - @enemy2.pos
-    if rel.abs < 100
-      @enemy1.change(10,rel.arg,0.1)
-      @enemy2.change(10,(-rel).arg,0.1)
-    end
-
     @enemy1.update(@boids)
-    @enemy2.update(@boids)
   end
 
   def draw
     @boids.draw
     @enemy1.draw
-    @enemy2.draw
     @font.draw("number of boid: #{@boids.size}",10,10,ZOrder::UI,1.0,1.0,0xffffff00)
   end
 end
